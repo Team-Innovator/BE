@@ -17,5 +17,6 @@ public class YouTubeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name; // 유튜브 채널 명
+    private String keyword; // 검색 키워드
     private int subscriberCount; // 해당 유튜브 채널 구독자 수
 }
