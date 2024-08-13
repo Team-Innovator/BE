@@ -1,5 +1,6 @@
 package com.example.innovator.Entity;
 
+import com.example.innovator.Enum.MonetizationStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,7 +9,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Entity(name = "users")
+@Entity(name = "youtube")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter

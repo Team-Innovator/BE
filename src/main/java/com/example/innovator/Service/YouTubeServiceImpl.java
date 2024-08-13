@@ -1,7 +1,7 @@
 package com.example.innovator.Service;
 
 import com.example.innovator.DTO.YouTubeDTO;
-import com.example.innovator.Entity.MonetizationStatus;
+import com.example.innovator.Enum.MonetizationStatus;
 import com.example.innovator.Entity.YouTubeEntity;
 import com.example.innovator.Repository.YouTubeRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -90,8 +90,8 @@ public class YouTubeServiceImpl implements YouTubeService {
 
                     // 구독자 수 1000명 이상 + 생성일로부터 1년 이상이면 수익 창출 채널
                     MonetizationStatus monetizationStatus = (subscriberCount >= 1000 && creationDate.isBefore(LocalDate.now().minusYears(1)))
-                            ? MonetizationStatus.MONETIZED
-                            : MonetizationStatus.NOT_MONETIZED;
+                            ? MonetizationStatus.수익창출계정
+                            : MonetizationStatus.수익창출계정아님;
 
                     return new YouTubeEntity(null, title, keyword, subscriberCount, monetizationStatus, creationDate);
                 })

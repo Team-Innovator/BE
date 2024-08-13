@@ -1,6 +1,6 @@
 package com.example.innovator.DTO;
 
-import com.example.innovator.Entity.MonetizationStatus;
+import com.example.innovator.Enum.MonetizationStatus;
 import com.example.innovator.Entity.YouTubeEntity;
 import lombok.*;
 
