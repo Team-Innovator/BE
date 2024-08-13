@@ -54,10 +54,10 @@ public class YouTubeServiceImpl implements YouTubeService {
                 })
                 .collect(Collectors.toList());
 
-        return getChannelsWithSubscriberCount(channelIds);
+        return getChannelsWithSubscriberCount(channelIds, keyword); // keyword를 전달
     }
 
-    private List<YouTubeDTO> getChannelsWithSubscriberCount(List<String> channelIds) {
+    private List<YouTubeDTO> getChannelsWithSubscriberCount(List<String> channelIds, String keyword) {
         URI uri = UriComponentsBuilder.fromHttpUrl(youtubeChannelApiUrl)
                 .queryParam("part", "statistics,snippet")
                 .queryParam("id", String.join(",", channelIds))
@@ -76,13 +76,13 @@ public class YouTubeServiceImpl implements YouTubeService {
                     int subscriberCount = Integer.parseInt((String) statistics.get("subscriberCount"));
                     return subscriberCount >= 2000 && subscriberCount <= 50000; // 구독자 수 조건을 확장
                 })
-                // YouTubeEntity 생성 시 keyword 추가
+                // YouTubeEntity 생성 시 실제 keyword를 사용
                 .map(item -> {
                     Map<String, Object> snippet = (Map<String, Object>) item.get("snippet");
                     String title = (String) snippet.get("title");
                     Map<String, Object> statistics = (Map<String, Object>) item.get("statistics");
                     int subscriberCount = Integer.parseInt((String) statistics.get("subscriberCount"));
-                    return new YouTubeEntity(null, title, "keyword", subscriberCount); // keyword를 추가
+                    return new YouTubeEntity(null, title, keyword, subscriberCount); // keyword를 추가
                 })
                 .collect(Collectors.toList());
 
