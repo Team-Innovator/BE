@@ -17,3 +17,6 @@ spring:
 
 youtube:
   api-key: ${YOUTUBE_KEY}
+
+gemini:
+  api-key: ${GEMINI_KEY}
