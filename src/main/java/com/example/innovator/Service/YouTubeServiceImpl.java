@@ -1,6 +1,7 @@
 package com.example.innovator.Service;
 
 import com.example.innovator.DTO.YouTubeDTO;
+import com.example.innovator.Entity.MonetizationStatus;
 import com.example.innovator.Entity.YouTubeEntity;
 import com.example.innovator.Repository.YouTubeRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,9 +10,12 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.ZonedDateTime;
 
 @Service
 public class YouTubeServiceImpl implements YouTubeService {
@@ -35,18 +39,16 @@ public class YouTubeServiceImpl implements YouTubeService {
                 .queryParam("part", "snippet")
                 .queryParam("q", keyword)
                 .queryParam("type", "video")
-                .queryParam("maxResults", 25) // 결과를 25개까지 가져옴
-                .queryParam("regionCode", "KR") // 한국 지역 코드
-                .queryParam("relevanceLanguage", "ko") // 한국어 콘텐츠 우선
+                .queryParam("maxResults", 25)
+                .queryParam("regionCode", "KR")
+                .queryParam("relevanceLanguage", "ko")
                 .queryParam("key", apiKey)
                 .build()
                 .toUri();
 
-        // JSON 응답을 Map으로 받기
         Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
         List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
 
-        // 채널 ID 추출
         List<String> channelIds = items.stream()
                 .map(item -> {
                     Map<String, Object> snippet = (Map<String, Object>) item.get("snippet");
@@ -54,7 +56,7 @@ public class YouTubeServiceImpl implements YouTubeService {
                 })
                 .collect(Collectors.toList());
 
-        return getChannelsWithSubscriberCount(channelIds, keyword); // keyword를 전달
+        return getChannelsWithSubscriberCount(channelIds, keyword);
     }
 
     private List<YouTubeDTO> getChannelsWithSubscriberCount(List<String> channelIds, String keyword) {
@@ -65,31 +67,38 @@ public class YouTubeServiceImpl implements YouTubeService {
                 .build()
                 .toUri();
 
-        // JSON 응답을 Map으로 받기
         Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
         List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
 
-        // 구독자 수 필터링 및 DTO 변환
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
         List<YouTubeEntity> channels = items.stream()
                 .filter(item -> {
                     Map<String, Object> statistics = (Map<String, Object>) item.get("statistics");
                     int subscriberCount = Integer.parseInt((String) statistics.get("subscriberCount"));
-                    return subscriberCount >= 1 && subscriberCount <= 200; // 구독자 수 조건을 확장
+                    return subscriberCount >= 0 && subscriberCount <= 2000;
                 })
-                // YouTubeEntity 생성 시 실제 keyword를 사용
                 .map(item -> {
                     Map<String, Object> snippet = (Map<String, Object>) item.get("snippet");
                     String title = (String) snippet.get("title");
+                    String publishedAt = (String) snippet.get("publishedAt");
+
+                    LocalDate creationDate = ZonedDateTime.parse(publishedAt, formatter).toLocalDate();
+
                     Map<String, Object> statistics = (Map<String, Object>) item.get("statistics");
                     int subscriberCount = Integer.parseInt((String) statistics.get("subscriberCount"));
-                    return new YouTubeEntity(null, title, keyword, subscriberCount); // keyword를 추가
+
+                    // 구독자 수 1000명 이상 + 생성일로부터 1년 이상이면 수익 창출 채널
+                    MonetizationStatus monetizationStatus = (subscriberCount >= 1000 && creationDate.isBefore(LocalDate.now().minusYears(1)))
+                            ? MonetizationStatus.MONETIZED
+                            : MonetizationStatus.NOT_MONETIZED;
+
+                    return new YouTubeEntity(null, title, keyword, subscriberCount, monetizationStatus, creationDate);
                 })
                 .collect(Collectors.toList());
 
-        // 채널 정보를 데이터베이스에 저장
         youTubeRepository.saveAll(channels);
 
-        // DTO로 변환하여 반환
         return channels.stream()
                 .map(YouTubeDTO::entityToDto)
                 .collect(Collectors.toList());
